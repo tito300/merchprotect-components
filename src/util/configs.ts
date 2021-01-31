@@ -1,4 +1,10 @@
-export const socket =  {
-        host: 'localhost',
-        port: '3002'
+export const options = {
+    socket: {
+        url: 'localhost:3002',
+        rooms: [
+                {roomId: 'subscribe', roomName: 'Subscription issues'}, 
+                {roomId: 'howto', roomName: 'Help using site'},
+                {roomId: 'bugs', roomName: 'Report a bug'}
+        ]
+    }
 }

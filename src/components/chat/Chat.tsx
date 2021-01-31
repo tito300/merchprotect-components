@@ -1,127 +1,132 @@
-import React, { DOMElement, useState } from 'react'; 
+import React, { ChangeEvent, DOMElement, useEffect, useRef, useState } from 'react'; 
 import styled, { css, createGlobalStyle } from "styled-components";
-import { socket as socketDefaults } from '../../util/configs'; 
+import { options as defaultOptions } from '../../util/configs'; 
+import { io, Socket as SocketType } from 'socket.io-client';
+import { useImmer } from 'use-immer';
+import { 
+    Button, 
+    Container, 
+    CurrentClient, 
+    Header, 
+    Icon, 
+    Msg, 
+    MsgInput, 
+    MsgList, 
+    MsgWindow, 
+    RoomsList, 
+    Shape, 
+    Wrapper } from '../elements/chat';
 
 interface Socket {
-    host: string,
-    port: string,
+    url: string,
+    rooms: {roomId: string, roomName: string}[]
 }
 
 interface ChatProp {
-    socket: Socket,
-    color?: string,
-    backgroundColor?: string
-}
-
-interface StyledProps {
+    socketConfigs: Socket,
     color?: string,
     backgroundColor?: string,
-    open?: boolean
+    sentColor?: string,
+    receiveColor?: string,
 }
 
-const commonCss = css<StyledProps>`
-    background-color: ${props => props.backgroundColor};
-    color: ${props => props.color};
-`
-const Container = styled.div`
-    overflow: hidden;
-    box-sizing: border-box;
+export interface Message {
+    id: number,
+    msg: string,
+    source: MsgSource,
+    timestamp: string
+}
 
-    * {
-        box-sizing: border-box;
-    }
-`
-const Icon = styled.div<StyledProps>`
-    width: 70px;
-    height: 70px;
-    border-radius: 50%;
-    position: fixed;
-    bottom: 15px;
-    right: 15px;
-    z-index: 1000;
-    ${commonCss}
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    line-height: 0;
-    cursor: pointer;
-    display: ${props => props.open ? 'none' : 'flex'};
-`
+type MsgSource = "admin" | "client";
 
-const Wrapper = styled.div<StyledProps>`
-    ${commonCss}
-    position: fixed;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    padding: 10px 15px;
-    width: 320px;
-    height: 500px;
-    visibility: ${props => props.open ? 'visible' : 'hidden'};
-    bottom: ${props => props.open ? '15px' : '-150px'};
-    right: ${props => props.open ? '15px' : '-150px'};
-    transform: ${props => props.open ? 'scale(1)' : 'scale(0.2)'};
-    transition: all 100ms ease-in;
-`
+let socket: SocketType | null;
 
-const Header = styled.h4<StyledProps>`
-    font-size: 16px;
-    color: ${props => props.color};
-    /* padding: 10px 15px; */
-    margin: 0;
-    margin-bottom: 15px;
-    font-weight: 400;
-`
-const MsgWindow = styled.div<StyledProps>`
-    padding: 10px 15px;
-    background-color: white;
-    min-height: 60%;
-    width: 100%;
-    margin-bottom: 10px;
-`
-const MsgInput = styled.textarea<StyledProps>`
-    padding: 10px 15px;
-    background-color: white;
-    min-height: 50px;
-    width: 100%;
-    margin-bottom: 3px;
-`
-const Button = styled.button<StyledProps>`
-    padding: 4px 35px;
-    align-self: flex-end;
-    border: none;
-    background-color: #6dc490;
-    color: white;
-    cursor: pointer;
-    font-weight: bold;
-`
 function Chat({ 
     backgroundColor = '#6d92ab', 
     color = 'white', 
-    socket = socketDefaults } : ChatProp) {
+    sentColor = '#deffdc',
+    receiveColor = '#dcf1ff',
+    socketConfigs = defaultOptions.socket } 
+    : ChatProp) {
+
+    const inputRef = useRef<HTMLTextAreaElement>(null);
 
     const [open, setOpen] = useState(false);
+    const [msg, setMsg] = useState('');
+    const [messages, setMessages] = useImmer<Message[]>([]!)
+
+    useEffect(() => {
+        // if (socket) return;
+        socket = io(socketConfigs.url);
+        let sessionId = getSessionId()
+
+        socket.on('connect', () => {
+            socket!.emit('join', sessionId, null, (messages: Message[]) => {
+                if (messages) setMessages(() => messages);
+            });
+            socket!.on('message', (msgObj: Message) => setMessages(initial => { 
+                const {msg, source, timestamp, id} = {...msgObj};
+                initial.push({
+                    source, 
+                    msg, 
+                    timestamp,
+                    id
+                }) 
+            }))
+        })
+
+        return () => { socket?.off('message') };
+    }, [])
+
+    const sendMsg = () => {
+        if (!msg) return; 
+
+        socket?.emit('message', msg, getSessionId());
+        setMsg('');
+        inputRef.current?.focus();
+    } 
 
     return (
         <Container id="chat__container">
             <Icon open={open} onClick={() => setOpen(!open)} color={color} backgroundColor={backgroundColor}>
+                {/* <Shape backgroundColor={backgroundColor} shape="poly"></Shape> */}
+                <Shape backgroundColor={backgroundColor} shape="circle"></Shape>
                 CHAT
             </Icon>
-
-            <Wrapper open={open} backgroundColor={backgroundColor}>
+            <Wrapper open={open} backgroundColor={backgroundColor} width="320px">
+                <Shape backgroundColor={backgroundColor}></Shape>
                 <Header color={color}>How can we help you?</Header>
                 <MsgWindow>
-                    
+                    {/* <MsgStatus></MsgStatus> */}
+                    <MsgList>
+                        {messages && messages.length !== 0 && messages.map(msg => (
+                            <Msg key={msg.id} sentColor={sentColor} receiveColor={receiveColor} sender={msg.source}>{msg.msg}</Msg>
+                        ))}
+                    </MsgList>
                 </MsgWindow>
-                <MsgInput>
+                <MsgInput value={msg} onChange={(e: React.FormEvent<HTMLTextAreaElement>) => setMsg(e.currentTarget.value)} ref={inputRef}>
                     
                 </MsgInput>
-                <Button>
+                <Button onClick={sendMsg}>
                     Send
                 </Button>
             </Wrapper>
         </Container>
     )
+}
+
+function getSessionId(): string {
+    try {
+        let sessionId = sessionStorage.getItem('chat_id');
+        if (!sessionId) {
+            sessionId = Math.ceil(Math.random() * 10000).toString();
+            sessionStorage.setItem('chat_id', sessionId);
+        }
+        return sessionId;
+    } catch(err) {
+        //cookies disabled
+        return Math.ceil(Math.random() * 10000).toString();
+    }
 }
 
 export default Chat
