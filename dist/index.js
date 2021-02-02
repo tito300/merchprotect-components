@@ -4,7 +4,7 @@ const SlideAnimation = keyframes `
 
     0% {
 
-        margin-top: 50px;
+        transform: translateY(150px);
 
         opacity: 0.8;
 
@@ -12,7 +12,7 @@ const SlideAnimation = keyframes `
 
     100% {
 
-        margin-bottom: 0px;
+        transform: translateY(0px);
 
         opacity: 1;
 
@@ -44,7 +44,7 @@ export const UlList = css `
 
     text-align: start;
 
-    margin-top: 0;
+    margin: 0;
 
 `;
 
@@ -67,6 +67,16 @@ export const Container = styled.div `
     * {
 
         box-sizing: border-box;
+
+    }
+
+
+
+    p {
+
+        margin-top: 0;
+
+        margin-bottom: 5px;
 
     }
 
@@ -150,13 +160,15 @@ export const Header = styled.h4 `
 
     margin: 0;
 
-    margin-bottom: 5px;
+    margin-bottom: 10px;
 
     font-weight: 400;
 
 `;
 
 export const MsgWindow = styled.div `
+
+    position: relative;
 
     padding: 10px 7px;
 
@@ -174,7 +186,7 @@ export const MsgWindow = styled.div `
 
     flex-grow: 1;
 
-    max-height: 325px;
+    max-height: 350px;
 
     box-shadow: inset 0px -2px 16px -10px #000000;
 
@@ -202,7 +214,7 @@ export const MsgInput = styled.textarea `
 
     padding: 10px 15px;
 
-    background-color: white;
+    background-color: ${props => props.block ? '#bababa' : 'white'};
 
     min-height: 50px;
 
@@ -211,6 +223,8 @@ export const MsgInput = styled.textarea `
     margin-bottom: 5px;
 
     border: none;
+
+    pointer-events: ${props => props.block ? 'none' : 'default'};
 
 
 
@@ -250,7 +264,7 @@ export const RoomsList = styled.ul `
 
 `;
 
-export const Room = styled.li `
+export const RoomLi = styled.li `
 
     padding: 5px 8px;
 
@@ -266,7 +280,7 @@ export const Room = styled.li `
 
     color: #4d4d4d;
 
-    background-color: ${props => props.current ? '#b6f3b6' : '#ffdfa2'};
+    background-color: ${props => props.handled ? '#ffc165' : '#b6f3b6'};
 
     cursor: pointer;
 
@@ -308,7 +322,7 @@ export const Msg = styled.li `
 
     border-radius: 10px;
 
-    animation: ${SlideAnimation} 1s;
+    animation: ${SlideAnimation} 0.3s;
 
 `;
 
@@ -343,6 +357,8 @@ export const Column = styled.div `
 `;
 
 export const MsgWrapper = styled.div `
+
+    position: relative;
 
     display: flex;
 
@@ -385,6 +401,44 @@ export const Shape = styled.div `
     position: absolute;
 
     z-index: -1;
+
+`;
+
+export const ErrMsg = styled.p `
+
+    color: #8e2727;
+
+    background-color: #eea1a1;
+
+    width: 100%;
+
+    padding: 4px 10px;
+
+    box-shadow: 0px 2px 8px -5px #000000b0;
+
+`;
+
+export const MsgStatus = styled.p `
+
+    color: #00000075;
+
+    text-align: center;
+
+    margin-top: 0;
+
+    font-size: 14px;
+
+    padding: 5px 8px;
+
+    position: absolute;
+
+    top: 0;
+
+    left: 0;
+
+    background-color: white;
+
+    border-radius: 3px;
 
 `;
 

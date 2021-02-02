@@ -1,18 +1,6 @@
 /// <reference types="react" />
 
-interface Socket {
-
-    url: string;
-
-    rooms: {
-
-        roomId: string;
-
-        roomName: string;
-
-    }[];
-
-}
+import { Admin, Socket } from '../../types/chat';
 
 interface ChatProp {
 
@@ -26,9 +14,11 @@ interface ChatProp {
 
     receiveColor?: string;
 
+    admin: Admin;
+
 }
 
-declare function Chat({ backgroundColor, color, sentColor, receiveColor, socketConfigs }: ChatProp): JSX.Element;
+declare function ChatAdmin({ admin, backgroundColor, color, sentColor, receiveColor, socketConfigs }: ChatProp): JSX.Element;
 
-export default Chat;
+export default ChatAdmin;
 

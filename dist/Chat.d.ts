@@ -1,24 +1,56 @@
-/// <reference types="react" />
+declare type MsgSource = "admin" | "user";
 
-interface Socket {
+export interface Message {
 
-    host: string;
+    id: number;
 
-    port: string;
+    msg: string;
 
-}
+    source: MsgSource;
 
-interface ChatProp {
-
-    socket: Socket;
-
-    color?: string;
-
-    backgroundColor?: string;
+    timestamp: string;
 
 }
 
-declare function Chat({ backgroundColor, color, socket }: ChatProp): JSX.Element;
+export interface Socket {
 
-export default Chat;
+    url: string;
+
+    rooms: {
+
+        roomId: string;
+
+        roomName: string;
+
+    }[];
+
+}
+
+export interface Room {
+
+    id: string;
+
+    name: string;
+
+    active: boolean;
+
+    handled: boolean;
+
+    agent: string;
+
+    messages: Message[];
+
+}
+
+export interface Admin {
+
+    token: string;
+
+    name: string;
+
+    currentRoom?: Room;
+
+}
+
+export {};
 

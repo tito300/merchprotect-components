@@ -1,26 +1,21 @@
-import React, { ChangeEvent, DOMElement, useEffect, useRef, useState } from 'react'; 
-import styled, { css, createGlobalStyle } from "styled-components";
+import React, { useEffect, useRef, useState } from 'react'; 
 import { options as defaultOptions } from '../../util/configs'; 
+import { getSessionId } from '../../util/helpers'; 
 import { io, Socket as SocketType } from 'socket.io-client';
 import { useImmer } from 'use-immer';
 import { 
     Button, 
     Container, 
-    CurrentClient, 
     Header, 
     Icon, 
     Msg, 
     MsgInput, 
     MsgList, 
     MsgWindow, 
-    RoomsList, 
     Shape, 
     Wrapper } from '../elements/chat';
-
-interface Socket {
-    url: string,
-    rooms: {roomId: string, roomName: string}[]
-}
+import { useScrollToBottom } from '../../util/hooks';
+import { Message, Socket } from '../../types/chat';
 
 interface ChatProp {
     socketConfigs: Socket,
@@ -29,15 +24,6 @@ interface ChatProp {
     sentColor?: string,
     receiveColor?: string,
 }
-
-export interface Message {
-    id: number,
-    msg: string,
-    source: MsgSource,
-    timestamp: string
-}
-
-type MsgSource = "admin" | "client";
 
 let socket: SocketType | null;
 
@@ -50,6 +36,7 @@ function Chat({
     : ChatProp) {
 
     const inputRef = useRef<HTMLTextAreaElement>(null);
+    const MsgWindowRef = useRef<HTMLDivElement>(null);
 
     const [open, setOpen] = useState(false);
     const [msg, setMsg] = useState('');
@@ -57,7 +44,12 @@ function Chat({
 
     useEffect(() => {
         // if (socket) return;
-        socket = io(socketConfigs.url);
+        debugger;
+        socket = io(socketConfigs.url, {
+            query: {
+                client: 'user'
+            }
+        });
         let sessionId = getSessionId()
 
         socket.on('connect', () => {
@@ -76,7 +68,11 @@ function Chat({
         })
 
         return () => { socket?.off('message') };
+        
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
+
+    useScrollToBottom(MsgWindowRef, [messages]);
 
     const sendMsg = () => {
         if (!msg) return; 
@@ -96,7 +92,7 @@ function Chat({
             <Wrapper open={open} backgroundColor={backgroundColor} width="320px">
                 <Shape backgroundColor={backgroundColor}></Shape>
                 <Header color={color}>How can we help you?</Header>
-                <MsgWindow>
+                <MsgWindow ref={MsgWindowRef}>
                     {/* <MsgStatus></MsgStatus> */}
                     <MsgList>
                         {messages && messages.length !== 0 && messages.map(msg => (
@@ -115,18 +111,5 @@ function Chat({
     )
 }
 
-function getSessionId(): string {
-    try {
-        let sessionId = sessionStorage.getItem('chat_id');
-        if (!sessionId) {
-            sessionId = Math.ceil(Math.random() * 10000).toString();
-            sessionStorage.setItem('chat_id', sessionId);
-        }
-        return sessionId;
-    } catch(err) {
-        //cookies disabled
-        return Math.ceil(Math.random() * 10000).toString();
-    }
-}
 
 export default Chat

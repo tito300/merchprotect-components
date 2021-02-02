@@ -3,15 +3,18 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@bit/merchprotect.merchprotect-components.chat-elements": "^1.2.0",
     "@testing-library/jest-dom": "^5.11.4",
     "@testing-library/react": "^11.1.0",
     "@testing-library/user-event": "^12.1.10",
     "@types/jest": "^26.0.15",
+    "@types/jsonwebtoken": "^8.5.0",
     "@types/node": "^12.0.0",
     "@types/react": "^16.9.53",
     "@types/react-dom": "^16.9.8",
     "@types/react-router-dom": "^5.1.7",
     "@types/styled-components": "^5.1.7",
+    "jsonwebtoken": "^8.5.1",
     "react": "^17.0.1",
     "react-dom": "^17.0.1",
     "react-router-dom": "^5.2.0",
@@ -47,11 +50,17 @@
     ]
   },
   "bit": {
+    "defaultScope": "merchprotect.merchprotect-components",
     "env": {
       "compiler": "bit.envs/compilers/react-typescript@3.1.64",
       "tester": "bit.envs/testers/jest@22.4.3"
     },
     "componentsDefaultDirectory": "components/{name}",
-    "packageManager": "npm"
+    "packageManager": "npm",
+    "resolveModules": {
+      "aliases": {
+        "@": "src/"
+      }
+    }
   }
 }

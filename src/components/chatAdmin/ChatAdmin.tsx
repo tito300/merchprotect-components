@@ -1,5 +1,4 @@
-import React, { ChangeEvent, DOMElement, useEffect, useState } from 'react'; 
-import styled, { css, createGlobalStyle } from "styled-components";
+import React, { useEffect, useMemo, useRef, useState } from 'react'; 
 import { options as defaultOptions } from '../../util/configs'; 
 import { io, Socket as SocketType } from 'socket.io-client';
 import { useImmer } from 'use-immer';
@@ -8,7 +7,6 @@ import {
     Column,
     Row, 
     Container, 
-    CurrentClient, 
     Header, 
     Icon, 
     Msg, 
@@ -19,13 +17,12 @@ import {
     Wrapper, 
     MsgWrapper,
     RoomsWrapper,
-    Room} from '../elements/chat';
-import { Message } from '../chat/Chat';
-
-interface Socket {
-    url: string,
-    rooms: {roomId: string, roomName: string}[]
-}
+    ErrMsg,
+    RoomLi,
+    MsgStatus
+} from '@bit/merchprotect.merchprotect-components.chat-elements';
+import { useScrollToBottom } from '../../util/hooks';
+import { Admin, Message, Room, Socket } from '../../types/chat';
 
 interface ChatProp {
     socketConfigs: Socket,
@@ -33,22 +30,13 @@ interface ChatProp {
     backgroundColor?: string,
     sentColor?: string,
     receiveColor?: string,
+    admin: Admin,
 }
-
-
-interface Room {
-    id: string,
-    name: string,
-    active: boolean,
-    agent: string,
-    messages: Message[],
-}
-
-type MsgSource = "admin" | "client";
 
 let socket: SocketType | null;
 
-function Chat({ 
+function ChatAdmin({ 
+    admin,
     backgroundColor = '#6d92ab', 
     color = 'white', 
     sentColor = '#deffdc',
@@ -56,60 +44,95 @@ function Chat({
     socketConfigs = defaultOptions.socket } 
     : ChatProp) {
 
+    const MsgWindowRef = useRef<HTMLDivElement>(null);
+    const inputRef = useRef<HTMLTextAreaElement>(null);
+
     const [open, setOpen] = useState(false);
-    const [disconnected, setDisconnected] = useState(false);
+    const [roomMsg, setRoomMsg] = useState<string | null>(null);
     const [msg, setMsg] = useState('');
     const [rooms, setRooms] = useState<Room[]>([]);
-    const [currentRoom, setCurrentRoom] = useState(0)
-    const [messages, setMessages] = useImmer<Message[]>([]!)
+    const [currentRoom, setCurrentRoom] = useState<number>(0)
+    const [error, setError] = useState<string | null>(null);
+    const [messages, setMessages] = useImmer<Message[]>([]!);
+
+    useScrollToBottom(MsgWindowRef, [messages]);
 
     useEffect(() => {
         // if (socket) return;
-        socket = io(socketConfigs.url);
+        socket = io(socketConfigs.url, {
+            query: {
+                client: 'admin'
+            },
+            auth: {
+                token: admin.token,
+            }
+        });
 
         socket.on('connect', () => {
-            socket!.emit('join', 'default', 'Tarek');
-            socket!.on('message', (msgObj: Message) => setMessages(initial => { 
-                const {msg, source, timestamp, id} = {...msgObj};
-                initial.push({
-                    source, 
-                    msg, 
-                    timestamp,
-                    id
-                }) 
-            }))
+            setError(null);
+            socket!.emit('join', 'admins');
+        })
+        socket!.on('message', (msgObj: Message) => setMessages(initial => { 
+            const {msg, source, timestamp, id} = {...msgObj};
+            initial.push({
+                source, 
+                msg, 
+                timestamp,
+                id
+            }) 
+        }))
 
-            socket?.on('rooms', (rooms: Room[]) => {
-                console.log('rooms: ', rooms);
-                const currentRoomIndex = getCurrentRoomIdex(rooms, 'Tarek');
-                setCurrentRoom(currentRoomIndex);
-                setRooms(rooms);
+        socket?.on('rooms', (rooms: Room[], admins: Admin[]) => {
+            console.log('rooms: ', rooms);
+            setRooms(rooms);
+            const currentRoom = admins.find(a => a.name === admin.name)?.currentRoom;
+            const currentRoomIndex = currentRoom ? rooms.findIndex(r => r.id === currentRoom.id) : 0;
 
-                setMessages(() =>  rooms[currentRoomIndex].messages);
-            })
-            socket?.on('client_disconnected', () => {
-                setDisconnected(true);
-            })
+            setCurrentRoom(currentRoomIndex);
+            setMessages(() =>  rooms[currentRoomIndex]?.messages ?? []);
+
+            if (isInOwnRoom()) {
+                setRoomMsg('Client is being handled by another Admin')
+            }
+
+        })
+        socket?.on('client_disconnected', () => {
+            setRoomMsg('Client is disconnected');
+        })
+        socket?.on('client_reconnected', () => {
+            setRoomMsg('Client connected');
+        })
+        socket?.on('connect_error', (err: Error) => {
+            setError(err.message);
         })
 
         return () => { socket?.off('message') };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
+    
 
     const sendMsg = () => {
-        if (!msg || disconnected) return; 
+        if (!msg) return; 
 
         socket?.emit('message', msg, rooms[currentRoom].id);
         setMsg('');
+        inputRef.current?.focus();
     } 
 
     const changeRoom = (roomIndex: number): void => {
         const roomId = rooms[roomIndex]?.id;
         if (roomId) {
-            socket?.emit('join', roomId, 'Tarek');
-
             setCurrentRoom(roomIndex);
+            setRoomMsg(null);
+            socket?.emit('join', roomId);
         }
     }
+
+    const isInOwnRoom = useMemo(() => () => {
+        const is = rooms[currentRoom]?.agent === admin.name;
+        console.log(rooms[currentRoom]?.agent, ' ', admin.name , ' ', is);
+        return is;
+    }, [rooms, currentRoom, admin.name])
 
     return (
         <Container id="chat__container">
@@ -118,32 +141,32 @@ function Chat({
             </Icon>
 
             <Wrapper open={open} backgroundColor={backgroundColor} width="420px">
-                <Header color={color}>Please assist customers</Header>
-                <CurrentClient color={color}>Current: {rooms[currentRoom]?.name}</CurrentClient>
-                
-                <Row>
+                {error && <ErrMsg>{error}</ErrMsg>}
+                <Header color={color}>Please assist customers</Header>                
+                <Row style={{flexGrow: 1}}>
                     <Column col={4}>
-                        {rooms?.length > 0 && 
-                            <RoomsWrapper>
+                        <RoomsWrapper>
+                            {rooms?.length > 0 && 
+
                                 <RoomsList> 
                                     {rooms.map((room, i) => (
-                                        <Room onClick={() => changeRoom(i)} current={i === currentRoom} key={room.id}>{room.name}</Room>
+                                        <RoomLi onClick={() => changeRoom(i)} handled={room.handled} current={i === currentRoom} key={room.id}>{room.name}</RoomLi>
                                     ))}
                                 </RoomsList>
-                            </RoomsWrapper>
-                        }
+                            }
+                        </RoomsWrapper>
                     </Column>
                     <Column col={8}>
                         <MsgWrapper>
-                            <MsgWindow>
-                                {/* <MsgStatus></MsgStatus> */}
+                            <MsgWindow ref={MsgWindowRef}>
                                 <MsgList>
                                     {messages && messages.length !== 0 && messages.map(msg => (
                                         <Msg key={msg.id} sentColor={sentColor} receiveColor={receiveColor} sender={msg.source}>{msg.msg}</Msg>
-                                    ))}
+                                        ))}
                                 </MsgList>
                             </MsgWindow>
-                            <MsgInput value={msg} onChange={(e: React.FormEvent<HTMLTextAreaElement>) => setMsg(e.currentTarget.value)}>
+                            {roomMsg && <MsgStatus>{roomMsg}</MsgStatus>}
+                            <MsgInput ref={inputRef} block={!isInOwnRoom()} value={msg} onChange={(e: React.FormEvent<HTMLTextAreaElement>) => setMsg(e.currentTarget.value)}>
                                 
                             </MsgInput>
                             <Button onClick={sendMsg}>
@@ -157,8 +180,4 @@ function Chat({
     )
 }
 
-function getCurrentRoomIdex(rooms: Room[], agentName: string) {
-    return rooms.findIndex(r => r.agent === agentName);
-}
-
-export default Chat
+export default ChatAdmin

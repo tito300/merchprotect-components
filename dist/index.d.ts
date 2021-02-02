@@ -26,15 +26,21 @@ export declare const Header: import("styled-components").StyledComponent<"h4", a
 
 export declare const MsgWindow: import("styled-components").StyledComponent<"div", any, StyledProps, never>;
 
-export declare const MsgInput: import("styled-components").StyledComponent<"textarea", any, StyledProps, never>;
+export declare const MsgInput: import("styled-components").StyledComponent<"textarea", any, StyledProps & {
+
+    block?: boolean;
+
+}, never>;
 
 export declare const Button: import("styled-components").StyledComponent<"button", any, StyledProps, never>;
 
 export declare const RoomsList: import("styled-components").StyledComponent<"ul", any, {}, never>;
 
-export declare const Room: import("styled-components").StyledComponent<"li", any, {
+export declare const RoomLi: import("styled-components").StyledComponent<"li", any, {
 
     current: boolean;
+
+    handled: boolean;
 
 }, never>;
 
@@ -69,6 +75,10 @@ export declare const Shape: import("styled-components").StyledComponent<"div", a
     shape?: string;
 
 }, never>;
+
+export declare const ErrMsg: import("styled-components").StyledComponent<"p", any, {}, never>;
+
+export declare const MsgStatus: import("styled-components").StyledComponent<"p", any, {}, never>;
 
 export {};
 

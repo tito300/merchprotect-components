@@ -1,4 +1,22 @@
-import { Message } from '@bit/merchprotect.merchprotect-components.chat/dist/components/chat/Chat';
+/// <reference types="react" />
 
-export { Message };
+import { Socket } from '../../types/chat';
+
+interface ChatProp {
+
+    socketConfigs: Socket;
+
+    color?: string;
+
+    backgroundColor?: string;
+
+    sentColor?: string;
+
+    receiveColor?: string;
+
+}
+
+declare function Chat({ backgroundColor, color, sentColor, receiveColor, socketConfigs }: ChatProp): JSX.Element;
+
+export default Chat;
 

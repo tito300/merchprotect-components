@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 import { options as defaultOptions } from '../../util/configs';
 
@@ -6,17 +6,21 @@ import { io } from 'socket.io-client';
 
 import { useImmer } from 'use-immer';
 
-import { Button, Column, Row, Container, CurrentClient, Header, Icon, Msg, MsgInput, MsgList, MsgWindow, RoomsList, Wrapper, MsgWrapper, RoomsWrapper, Room } from '../elements/chat';
+import { Button, Column, Row, Container, Header, Icon, Msg, MsgInput, MsgList, MsgWindow, RoomsList, Wrapper, MsgWrapper, RoomsWrapper, ErrMsg, RoomLi, MsgStatus } from '@bit/merchprotect.merchprotect-components.chat-elements';
+
+import { useScrollToBottom } from '../../util/hooks';
 
 let socket;
 
-function Chat({ backgroundColor = '#6d92ab', color = 'white', sentColor = '#deffdc', receiveColor = '#dcf1ff', socketConfigs = defaultOptions.socket }) {
+function ChatAdmin({ admin, backgroundColor = '#6d92ab', color = 'white', sentColor = '#deffdc', receiveColor = '#dcf1ff', socketConfigs = defaultOptions.socket }) {
 
-    var _a;
+    const MsgWindowRef = useRef(null);
+
+    const inputRef = useRef(null);
 
     const [open, setOpen] = useState(false);
 
-    const [disconnected, setDisconnected] = useState(false);
+    const [roomMsg, setRoomMsg] = useState(null);
 
     const [msg, setMsg] = useState('');
 
@@ -24,53 +28,95 @@ function Chat({ backgroundColor = '#6d92ab', color = 'white', sentColor = '#deff
 
     const [currentRoom, setCurrentRoom] = useState(0);
 
+    const [error, setError] = useState(null);
+
     const [messages, setMessages] = useImmer([]);
+
+    useScrollToBottom(MsgWindowRef, [messages]);
 
     useEffect(() => {
 
-        socket = io(socketConfigs.url);
+        socket = io(socketConfigs.url, {
+
+            query: {
+
+                client: 'admin'
+
+            },
+
+            auth: {
+
+                token: admin.token,
+
+            }
+
+        });
 
         socket.on('connect', () => {
 
-            socket.emit('join', 'default', 'Tarek');
+            setError(null);
 
-            socket.on('message', (msgObj) => setMessages(initial => {
+            socket.emit('join', 'admins');
 
-                const { msg, source, timestamp, id } = Object.assign({}, msgObj);
+        });
 
-                initial.push({
+        socket.on('message', (msgObj) => setMessages(initial => {
 
-                    source,
+            const { msg, source, timestamp, id } = Object.assign({}, msgObj);
 
-                    msg,
+            initial.push({
 
-                    timestamp,
+                source,
 
-                    id
+                msg,
 
-                });
+                timestamp,
 
-            }));
-
-            socket === null || socket === void 0 ? void 0 : socket.on('rooms', (rooms) => {
-
-                console.log('rooms: ', rooms);
-
-                const currentRoomIndex = getCurrentRoomIdex(rooms, 'Tarek');
-
-                setCurrentRoom(currentRoomIndex);
-
-                setRooms(rooms);
-
-                setMessages(() => rooms[currentRoomIndex].messages);
+                id
 
             });
 
-            socket === null || socket === void 0 ? void 0 : socket.on('client_disconnected', () => {
+        }));
 
-                setDisconnected(true);
+        socket === null || socket === void 0 ? void 0 : socket.on('rooms', (rooms, admins) => {
 
-            });
+            var _a;
+
+            console.log('rooms: ', rooms);
+
+            setRooms(rooms);
+
+            const currentRoom = (_a = admins.find(a => a.name === admin.name)) === null || _a === void 0 ? void 0 : _a.currentRoom;
+
+            const currentRoomIndex = currentRoom ? rooms.findIndex(r => r.id === currentRoom.id) : 0;
+
+            setCurrentRoom(currentRoomIndex);
+
+            setMessages(() => { var _a, _b; return (_b = (_a = rooms[currentRoomIndex]) === null || _a === void 0 ? void 0 : _a.messages) !== null && _b !== void 0 ? _b : []; });
+
+            if (isInOwnRoom()) {
+
+                setRoomMsg('Client is being handled by another Admin');
+
+            }
+
+        });
+
+        socket === null || socket === void 0 ? void 0 : socket.on('client_disconnected', () => {
+
+            setRoomMsg('Client is disconnected');
+
+        });
+
+        socket === null || socket === void 0 ? void 0 : socket.on('client_reconnected', () => {
+
+            setRoomMsg('Client connected');
+
+        });
+
+        socket === null || socket === void 0 ? void 0 : socket.on('connect_error', (err) => {
+
+            setError(err.message);
 
         });
 
@@ -80,13 +126,17 @@ function Chat({ backgroundColor = '#6d92ab', color = 'white', sentColor = '#deff
 
     const sendMsg = () => {
 
-        if (!msg || disconnected)
+        var _a;
+
+        if (!msg)
 
             return;
 
         socket === null || socket === void 0 ? void 0 : socket.emit('message', msg, rooms[currentRoom].id);
 
         setMsg('');
+
+        (_a = inputRef.current) === null || _a === void 0 ? void 0 : _a.focus();
 
     };
 
@@ -98,13 +148,27 @@ function Chat({ backgroundColor = '#6d92ab', color = 'white', sentColor = '#deff
 
         if (roomId) {
 
-            socket === null || socket === void 0 ? void 0 : socket.emit('join', roomId, 'Tarek');
-
             setCurrentRoom(roomIndex);
+
+            setRoomMsg(null);
+
+            socket === null || socket === void 0 ? void 0 : socket.emit('join', roomId);
 
         }
 
     };
+
+    const isInOwnRoom = useMemo(() => () => {
+
+        var _a, _b;
+
+        const is = ((_a = rooms[currentRoom]) === null || _a === void 0 ? void 0 : _a.agent) === admin.name;
+
+        console.log((_b = rooms[currentRoom]) === null || _b === void 0 ? void 0 : _b.agent, ' ', admin.name, ' ', is);
+
+        return is;
+
+    }, [rooms, currentRoom, admin.name]);
 
     return (React.createElement(Container, { id: "chat__container" },
 
@@ -112,41 +176,33 @@ function Chat({ backgroundColor = '#6d92ab', color = 'white', sentColor = '#deff
 
         React.createElement(Wrapper, { open: open, backgroundColor: backgroundColor, width: "420px" },
 
+            error && React.createElement(ErrMsg, null, error),
+
             React.createElement(Header, { color: color }, "Please assist customers"),
 
-            React.createElement(CurrentClient, { color: color },
+            React.createElement(Row, { style: { flexGrow: 1 } },
 
-                "Current: ", (_a = rooms[currentRoom]) === null || _a === void 0 ? void 0 :
+                React.createElement(Column, { col: 4 },
 
-                _a.name),
+                    React.createElement(RoomsWrapper, null, (rooms === null || rooms === void 0 ? void 0 : rooms.length) > 0 &&
 
-            React.createElement(Row, null,
-
-                React.createElement(Column, { col: 4 }, (rooms === null || rooms === void 0 ? void 0 : rooms.length) > 0 &&
-
-                    React.createElement(RoomsWrapper, null,
-
-                        React.createElement(RoomsList, null, rooms.map((room, i) => (React.createElement(Room, { onClick: () => changeRoom(i), current: i === currentRoom, key: room.id }, room.name)))))),
+                        React.createElement(RoomsList, null, rooms.map((room, i) => (React.createElement(RoomLi, { onClick: () => changeRoom(i), handled: room.handled, current: i === currentRoom, key: room.id }, room.name)))))),
 
                 React.createElement(Column, { col: 8 },
 
                     React.createElement(MsgWrapper, null,
 
-                        React.createElement(MsgWindow, null,
+                        React.createElement(MsgWindow, { ref: MsgWindowRef },
 
                             React.createElement(MsgList, null, messages && messages.length !== 0 && messages.map(msg => (React.createElement(Msg, { key: msg.id, sentColor: sentColor, receiveColor: receiveColor, sender: msg.source }, msg.msg))))),
 
-                        React.createElement(MsgInput, { value: msg, onChange: (e) => setMsg(e.currentTarget.value) }),
+                        roomMsg && React.createElement(MsgStatus, null, roomMsg),
+
+                        React.createElement(MsgInput, { ref: inputRef, block: !isInOwnRoom(), value: msg, onChange: (e) => setMsg(e.currentTarget.value) }),
 
                         React.createElement(Button, { onClick: sendMsg }, "Send")))))));
 
 }
 
-function getCurrentRoomIdex(rooms, agentName) {
-
-    return rooms.findIndex(r => r.agent === agentName);
-
-}
-
-export default Chat;
+export default ChatAdmin;
 

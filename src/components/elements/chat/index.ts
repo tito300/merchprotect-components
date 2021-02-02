@@ -9,11 +9,11 @@ interface StyledProps {
 
 const SlideAnimation = keyframes`
     0% {
-        margin-top: 50px;
+        transform: translateY(150px);
         opacity: 0.8;
     }
     100% {
-        margin-bottom: 0px;
+        transform: translateY(0px);
         opacity: 1;
     }
 ` 
@@ -30,7 +30,7 @@ export const UlList = css`
     list-style: none;
     padding-left: 0;
     text-align: start;
-    margin-top: 0;
+    margin: 0;
 `
 
 export const commonCss = css<StyledProps>`
@@ -43,6 +43,11 @@ export const Container = styled.div`
 
     * {
         box-sizing: border-box;
+    }
+
+    p {
+        margin-top: 0;
+        margin-bottom: 5px;
     }
 `
 export const Icon = styled.div<StyledProps>`
@@ -86,10 +91,11 @@ export const Header = styled.h4<StyledProps>`
     color: ${props => props.color};
     /* padding: 10px 15px; */
     margin: 0;
-    margin-bottom: 5px;
+    margin-bottom: 10px;
     font-weight: 400;
 `
 export const MsgWindow = styled.div<StyledProps>`
+    position: relative;
     padding: 10px 7px;
     background-color: white;
     min-height: 60%;
@@ -98,7 +104,7 @@ export const MsgWindow = styled.div<StyledProps>`
     margin-bottom: 10px;
     overflow-y: scroll;
     flex-grow: 1;
-    max-height: 325px;
+    max-height: 350px;
     box-shadow: inset 0px -2px 16px -10px #000000;
 
     ::-webkit-scrollbar {
@@ -110,13 +116,14 @@ export const MsgWindow = styled.div<StyledProps>`
         background: #FF0000;
     }
 `
-export const MsgInput = styled.textarea<StyledProps>`
+export const MsgInput = styled.textarea<StyledProps & { block?: boolean }>`
     padding: 10px 15px;
-    background-color: white;
+    background-color: ${props => props.block ? '#bababa' : 'white'};
     min-height: 50px;
     width: 100%;
     margin-bottom: 5px;
     border: none;
+    pointer-events: ${props => props.block ? 'none' : 'default'};
 
     :focus {
         outline: 1px solid #7d72b6;
@@ -137,7 +144,7 @@ export const RoomsList = styled.ul`
     padding: 5px;
     height: 100%;
 `
-export const Room = styled.li<{current: boolean}>`
+export const RoomLi = styled.li<{current: boolean, handled: boolean}>`
     padding: 5px 8px;
     font-size: 14px;
     color: black;
@@ -145,7 +152,7 @@ export const Room = styled.li<{current: boolean}>`
     margin-bottom: 7px;
     border: ${props => props.current ? '5px solid #ce9035' : 'none'};
     color: #4d4d4d;
-    background-color: ${props => props.current ? '#b6f3b6' : '#ffdfa2'};
+    background-color: ${props => props.handled ? '#ffc165' : '#b6f3b6'};
     cursor: pointer;
 `
 
@@ -167,7 +174,7 @@ export const Msg = styled.li<{sender: string, sentColor: string, receiveColor: s
     max-width: 80%;
     line-height: 1.1;
     border-radius: 10px;
-    animation: ${SlideAnimation} 1s;
+    animation: ${SlideAnimation} 0.3s;
 `
 
 export const CurrentClient = styled.p`
@@ -187,6 +194,7 @@ export const Column = styled.div<{ col?: number }>`
     width: calc((100% / 12) * ${({ col = 1 }) => col});
 `
 export const MsgWrapper = styled.div`
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
@@ -208,4 +216,25 @@ export const Shape = styled.div<StyledProps & { shape?: string }>`
     bottom: 0;
     position: absolute;
     z-index: -1;
+`
+
+export const ErrMsg = styled.p`
+    color: #8e2727;
+    background-color: #eea1a1;
+    width: 100%;
+    padding: 4px 10px;
+    box-shadow: 0px 2px 8px -5px #000000b0;
+`
+
+export const MsgStatus = styled.p`
+    color: #00000075;
+    text-align: center;
+    margin-top: 0;
+    font-size: 14px;
+    padding: 5px 8px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    background-color: white;
+    border-radius: 3px;
 `

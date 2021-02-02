@@ -1,4 +1,14 @@
-import { options } from '@bit/merchprotect.merchprotect-components.configs';
+import { Admin, Socket } from '../types/chat';
 
-export { options };
+interface Options {
+
+    socket: Socket;
+
+    admin: Admin;
+
+}
+
+export declare const options: Options;
+
+export {};
 
