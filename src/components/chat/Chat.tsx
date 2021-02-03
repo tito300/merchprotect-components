@@ -100,7 +100,7 @@ function Chat({
                         ))}
                     </MsgList>
                 </MsgWindow>
-                <MsgInput value={msg} onChange={(e: React.FormEvent<HTMLTextAreaElement>) => setMsg(e.currentTarget.value)} ref={inputRef}>
+                <MsgInput value={msg} onChange={(e: React.FormEvent<HTMLTextAreaElement>) => setMsg(e.currentTarget.value)} ref={inputRef} data-testid="msg-input">
                     
                 </MsgInput>
                 <Button onClick={sendMsg}>

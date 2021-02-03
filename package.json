@@ -6,7 +6,7 @@
     "@bit/merchprotect.merchprotect-components.chat-elements": "^1.2.0",
     "@testing-library/jest-dom": "^5.11.4",
     "@testing-library/react": "^11.1.0",
-    "@testing-library/user-event": "^12.1.10",
+    "@testing-library/user-event": "^12.6.3",
     "@types/jest": "^26.0.15",
     "@types/jsonwebtoken": "^8.5.0",
     "@types/node": "^12.0.0",
@@ -62,5 +62,17 @@
         "@": "src/"
       }
     }
+  },
+  "devDependencies": {
+    "mock-socket": "^9.0.3",
+    "socket.io-mock": "^1.3.1"
+  },
+  "jest": {
+    "transform": {
+      "^.+\\.[t|j]sx?$": "babel-jest"
+    },
+    "transformIgnorePatterns": [
+      "node_modules/(?!@shotgunjed)/"
+    ]
   }
 }

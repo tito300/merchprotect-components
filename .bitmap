@@ -4,8 +4,8 @@
     "merchprotect.merchprotect-components/chat-admin@1.2.0": {
         "files": [
             {
-                "name": "Chat.test.js",
-                "relativePath": "src/components/chatAdmin/Chat.test.js",
+                "name": "ChatAdmin.test.tsx",
+                "relativePath": "src/components/chatAdmin/ChatAdmin.test.tsx",
                 "test": false
             },
             {
@@ -56,8 +56,8 @@
     "merchprotect.merchprotect-components/chat@1.2.0": {
         "files": [
             {
-                "name": "Chat.test.js",
-                "relativePath": "src/components/chat/Chat.test.js",
+                "name": "Chat.test.tsx",
+                "relativePath": "src/components/chat/Chat.test.tsx",
                 "test": true
             },
             {

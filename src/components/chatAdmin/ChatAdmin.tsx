@@ -166,7 +166,7 @@ function ChatAdmin({
                                 </MsgList>
                             </MsgWindow>
                             {roomMsg && <MsgStatus>{roomMsg}</MsgStatus>}
-                            <MsgInput ref={inputRef} block={!isInOwnRoom()} value={msg} onChange={(e: React.FormEvent<HTMLTextAreaElement>) => setMsg(e.currentTarget.value)}>
+                            <MsgInput ref={inputRef} block={!isInOwnRoom()} value={msg} onChange={(e: React.FormEvent<HTMLTextAreaElement>) => setMsg(e.currentTarget.value)} data-testid="msg-input">
                                 
                             </MsgInput>
                             <Button onClick={sendMsg}>
