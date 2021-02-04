@@ -28,3 +28,10 @@ export interface Admin {
     name: string,
     currentRoom?: Room,
 }
+
+export interface Theme {
+    color?: string,
+    backgroundColor?: string,
+    sentColor?: string,
+    receiveColor?: string,
+}

@@ -15,10 +15,11 @@ import {
     Shape, 
     Wrapper } from '../elements/chat';
 import { useScrollToBottom } from '../../util/hooks';
-import { Message, Socket } from '../../types/chat';
+import { Message, Socket, Theme } from '../../types/chat';
 
 interface ChatProp {
     socketConfigs: Socket,
+    theme?: Theme,
     color?: string,
     backgroundColor?: string,
     sentColor?: string,
@@ -27,13 +28,17 @@ interface ChatProp {
 
 let socket: SocketType | null;
 
+const defaultTheme: Theme = {
+    backgroundColor: '#6d92ab', 
+    color: 'white', 
+    sentColor: '#deffdc',
+    receiveColor: '#dcf1ff',
+}
+
 function Chat({ 
-    backgroundColor = '#6d92ab', 
-    color = 'white', 
-    sentColor = '#deffdc',
-    receiveColor = '#dcf1ff',
-    socketConfigs = defaultOptions.socket } 
-    : ChatProp) {
+        theme = defaultTheme,
+        socketConfigs = defaultOptions.socket 
+    } : ChatProp) {
 
     const inputRef = useRef<HTMLTextAreaElement>(null);
     const MsgWindowRef = useRef<HTMLDivElement>(null);
@@ -84,19 +89,19 @@ function Chat({
 
     return (
         <Container id="chat__container">
-            <Icon open={open} onClick={() => setOpen(!open)} color={color} backgroundColor={backgroundColor}>
+            <Icon open={open} onClick={() => setOpen(!open)} color={theme.color} backgroundColor={theme.backgroundColor}>
                 {/* <Shape backgroundColor={backgroundColor} shape="poly"></Shape> */}
-                <Shape backgroundColor={backgroundColor} shape="circle"></Shape>
+                <Shape backgroundColor={theme.backgroundColor} shape="circle"></Shape>
                 CHAT
             </Icon>
-            <Wrapper open={open} backgroundColor={backgroundColor} width="320px">
-                <Shape backgroundColor={backgroundColor}></Shape>
-                <Header color={color}>How can we help you?</Header>
+            <Wrapper open={open} backgroundColor={theme.backgroundColor} width="320px">
+                <Shape backgroundColor={theme.backgroundColor}></Shape>
+                <Header color={theme.color}>How can we help you?</Header>
                 <MsgWindow ref={MsgWindowRef}>
                     {/* <MsgStatus></MsgStatus> */}
                     <MsgList>
                         {messages && messages.length !== 0 && messages.map(msg => (
-                            <Msg key={msg.id} sentColor={sentColor} receiveColor={receiveColor} sender={msg.source}>{msg.msg}</Msg>
+                            <Msg key={msg.id} sentColor={theme.sentColor!} receiveColor={theme.receiveColor!} sender={msg.source}>{msg.msg}</Msg>
                         ))}
                     </MsgList>
                 </MsgWindow>

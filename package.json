@@ -28,7 +28,8 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
-    "test": "react-scripts test",
+    "test:raw": "react-scripts test",
+    "test": "yarn test:raw -- --transformIgnorePatterns \"node_modules\\(?!(@bit)\\)\"",
     "eject": "react-scripts eject"
   },
   "eslintConfig": {
@@ -52,11 +53,22 @@
   "bit": {
     "defaultScope": "merchprotect.merchprotect-components",
     "env": {
-      "compiler": "bit.envs/compilers/react-typescript@3.1.64",
+      "compiler": { 
+        "bit.envs/compilers/react-typescript@3.1.64": {
+          "rawConfig": {
+            "tsconfig": {
+                "compilerOptions": {
+                    "target": "ES5",
+                    "module": "CommonJS"
+                }
+              }
+          }
+        } 
+      },
       "tester": "bit.envs/testers/jest@22.4.3"
     },
     "componentsDefaultDirectory": "components/{name}",
-    "packageManager": "npm",
+    "packageManager": "yarn",
     "resolveModules": {
       "aliases": {
         "@": "src/"
@@ -72,7 +84,8 @@
       "^.+\\.[t|j]sx?$": "babel-jest"
     },
     "transformIgnorePatterns": [
-      "node_modules/(?!@shotgunjed)/"
+      "node_modules/(?!@shotgunjed)/",
+      "node_modules/(?!(@bit)/)"
     ]
   }
 }

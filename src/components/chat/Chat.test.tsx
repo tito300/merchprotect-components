@@ -1,8 +1,8 @@
 import React from 'react';
 import {render, fireEvent, waitFor, screen} from '@testing-library/react';
 import '@testing-library/jest-dom/extend-expect';
-import { SocketIO, Server } from 'mock-socket';
-import userEvent from '@testing-library/user-event'
+import { Server } from 'mock-socket';
+// import userEvent from '@testing-library/user-event'
 
 import { options } from '../../util/configs'
 import Chat from './Chat';

@@ -10,11 +10,18 @@ import {
   Switch,
   Route
  } from 'react-router-dom';
+import { Theme } from './types/chat';
 
 const AppDiv = styled.div`
   min-height: 100vh;
   position: relative;
 `
+
+const theme: Theme = {
+  sentColor: "#d2d2f7",
+  backgroundColor: "#beb5e9" ,
+  color: "#46444d" 
+}
 
 function App() {
   return (
@@ -29,9 +36,7 @@ function App() {
           </Route>
           <Route path="/">
             <Chat 
-              sentColor="#d2d2f7" 
-              backgroundColor="#beb5e9" 
-              color="#46444d" 
+              theme={theme}
               socketConfigs={options.socket}
             />
           </Route>

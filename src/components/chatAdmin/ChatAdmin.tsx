@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useReducer, useRef, useState } from 'react'; 
 import { options as defaultOptions } from '../../util/configs'; 
 import { io, Socket as SocketType } from 'socket.io-client';
-import { useImmer } from 'use-immer';
 import { 
     Button, 
     Column,
@@ -20,12 +19,13 @@ import {
     ErrMsg,
     RoomLi,
     MsgStatus
-} from '@bit/merchprotect.merchprotect-components.chat-elements';
+} from '../elements/chat';
 import { useScrollToBottom } from '../../util/hooks';
-import { Admin, Message, Room, Socket } from '../../types/chat';
+import { Admin, Message, Room, Socket, Theme } from '../../types/chat';
 
 interface ChatProp {
     socketConfigs: Socket,
+    theme?: Theme,
     color?: string,
     backgroundColor?: string,
     sentColor?: string,
@@ -66,6 +66,13 @@ type ActionTypes =
     | "SET_MESSAGES"
     | "SET_ROOM_STATUS";
 
+const defaultTheme: Theme = {
+    backgroundColor: '#6d92ab', 
+    color: 'white', 
+    sentColor: '#deffdc',
+    receiveColor: '#dcf1ff',
+}
+
 function reducer(state: State, { type, payload }: Action): State {
     switch (type) {
         case "OPEN_CHAT":
@@ -90,13 +97,10 @@ function reducer(state: State, { type, payload }: Action): State {
 
 
 function ChatAdmin({ 
-    admin,
-    backgroundColor = '#6d92ab', 
-    color = 'white', 
-    sentColor = '#deffdc',
-    receiveColor = '#dcf1ff',
-    socketConfigs = defaultOptions.socket } 
-    : ChatProp) {
+        admin,
+        theme = defaultTheme,
+        socketConfigs = defaultOptions.socket 
+    } : ChatProp) {
 
     const MsgWindowRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -179,13 +183,13 @@ function ChatAdmin({
 
     return (
         <Container id="chat__container">
-            <Icon open={open} onClick={() => dispatch({type: "OPEN_CHAT"})} color={color} backgroundColor={backgroundColor}>
+            <Icon open={open} onClick={() => dispatch({type: "OPEN_CHAT"})} color={theme.color} backgroundColor={theme.backgroundColor}>
                 CHAT
             </Icon>
 
-            <Wrapper open={open} backgroundColor={backgroundColor} width="420px">
+            <Wrapper open={open} backgroundColor={theme.backgroundColor} width="420px">
                 {error && <ErrMsg>{error}</ErrMsg>}
-                <Header color={color}>Please assist customers</Header>                
+                <Header color={theme.color}>Please assist customers</Header>                
                 <Row style={{flexGrow: 1}}>
                     <Column col={4}>
                         <RoomsWrapper>
@@ -204,7 +208,7 @@ function ChatAdmin({
                             <MsgWindow ref={MsgWindowRef}>
                                 <MsgList>
                                     {messages && messages.length !== 0 && messages.map(msg => (
-                                        <Msg key={msg.id} sentColor={sentColor} receiveColor={receiveColor} sender={msg.source}>{msg.msg}</Msg>
+                                        <Msg key={msg.id} sentColor={theme.sentColor!} receiveColor={theme.receiveColor!} sender={msg.source}>{msg.msg}</Msg>
                                         ))}
                                 </MsgList>
                             </MsgWindow>
