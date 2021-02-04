@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'; 
+import React, { useEffect, useMemo, useReducer, useRef, useState } from 'react'; 
 import { options as defaultOptions } from '../../util/configs'; 
 import { io, Socket as SocketType } from 'socket.io-client';
 import { useImmer } from 'use-immer';
@@ -32,8 +32,62 @@ interface ChatProp {
     receiveColor?: string,
     admin: Admin,
 }
+interface State {
+    open: boolean,
+    roomStatus: string | null,
+    msg: string,
+    rooms: Room[],
+    currentRoom: number,
+    error: string | null,
+    messages: Message[]
+}
 
 let socket: SocketType | null;
+const initialState: State = {
+    open: false,
+    roomStatus: null,
+    msg: '',
+    rooms: [],
+    currentRoom: 0,
+    error: null,
+    messages: []
+}
+type Action = {
+    type: ActionTypes,
+    payload?: any
+}
+
+type ActionTypes = 
+    | "OPEN_CHAT"
+    | "SET_MSG"
+    | "SET_ROOMS"
+    | "SET_CURRENT_ROOM"
+    | "SET_ERROR"
+    | "SET_MESSAGES"
+    | "SET_ROOM_STATUS";
+
+function reducer(state: State, { type, payload }: Action): State {
+    switch (type) {
+        case "OPEN_CHAT":
+            return { ...state, open: true };
+        case "SET_MSG": 
+            return { ...state, msg: payload };
+        case "SET_ROOMS": 
+            return { ...state, rooms: payload };
+        case "SET_CURRENT_ROOM": 
+            return { ...state, currentRoom: payload, roomStatus: null };
+        case "SET_ROOM_STATUS": 
+            return { ...state, roomStatus: payload };
+        case "SET_ERROR": 
+            return { ...state, error: payload };
+        case "SET_MESSAGES": 
+            return { ...state, messages: payload(state) };
+        default:
+            return state;
+    }
+
+}
+
 
 function ChatAdmin({ 
     admin,
@@ -46,14 +100,9 @@ function ChatAdmin({
 
     const MsgWindowRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLTextAreaElement>(null);
-
-    const [open, setOpen] = useState(false);
-    const [roomMsg, setRoomMsg] = useState<string | null>(null);
-    const [msg, setMsg] = useState('');
-    const [rooms, setRooms] = useState<Room[]>([]);
-    const [currentRoom, setCurrentRoom] = useState<number>(0)
-    const [error, setError] = useState<string | null>(null);
-    const [messages, setMessages] = useImmer<Message[]>([]!);
+    
+    const [state, dispatch] = useReducer(reducer, initialState);
+    const { open, msg, rooms, currentRoom, roomStatus, error, messages } = state;
 
     useScrollToBottom(MsgWindowRef, [messages]);
 
@@ -69,41 +118,36 @@ function ChatAdmin({
         });
 
         socket.on('connect', () => {
-            setError(null);
+            dispatch({ type: "SET_ERROR", payload: null });
             socket!.emit('join', 'admins');
         })
-        socket!.on('message', (msgObj: Message) => setMessages(initial => { 
-            const {msg, source, timestamp, id} = {...msgObj};
-            initial.push({
-                source, 
-                msg, 
-                timestamp,
-                id
-            }) 
-        }))
+        socket!.on('message', (msgObj: Message) => { 
+            dispatch({ type: "SET_MESSAGES", payload: (state: State) => [...state.messages, msgObj]})
+        })
+
 
         socket?.on('rooms', (rooms: Room[], admins: Admin[]) => {
             console.log('rooms: ', rooms);
-            setRooms(rooms);
+            dispatch({ type: "SET_ROOMS", payload: rooms});;
             const currentRoom = admins.find(a => a.name === admin.name)?.currentRoom;
             const currentRoomIndex = currentRoom ? rooms.findIndex(r => r.id === currentRoom.id) : 0;
 
-            setCurrentRoom(currentRoomIndex);
-            setMessages(() =>  rooms[currentRoomIndex]?.messages ?? []);
+            dispatch({ type: "SET_CURRENT_ROOM", payload: currentRoomIndex});
+            dispatch({ type: "SET_MESSAGES", payload: () => rooms[currentRoomIndex]?.messages ?? []});
 
             if (isInOwnRoom()) {
-                setRoomMsg('Client is being handled by another Admin')
+                dispatch({ type: "SET_ROOM_STATUS", payload: 'Client is being handled by another Admin'});
             }
 
         })
         socket?.on('client_disconnected', () => {
-            setRoomMsg('Client is disconnected');
+            dispatch({ type: "SET_ROOM_STATUS", payload: 'Client is disconnected'});
         })
         socket?.on('client_reconnected', () => {
-            setRoomMsg('Client connected');
+            dispatch({ type: "SET_ROOM_STATUS", payload: 'Client connected'});
         })
         socket?.on('connect_error', (err: Error) => {
-            setError(err.message);
+            dispatch({ type: "SET_ERROR", payload: err.message });
         })
 
         return () => { socket?.off('message') };
@@ -115,15 +159,14 @@ function ChatAdmin({
         if (!msg) return; 
 
         socket?.emit('message', msg, rooms[currentRoom].id);
-        setMsg('');
+        dispatch({ type: "SET_MSG", payload: ''});
         inputRef.current?.focus();
     } 
 
     const changeRoom = (roomIndex: number): void => {
         const roomId = rooms[roomIndex]?.id;
         if (roomId) {
-            setCurrentRoom(roomIndex);
-            setRoomMsg(null);
+            dispatch({ type: "SET_CURRENT_ROOM", payload: roomIndex});            
             socket?.emit('join', roomId);
         }
     }
@@ -136,7 +179,7 @@ function ChatAdmin({
 
     return (
         <Container id="chat__container">
-            <Icon open={open} onClick={() => setOpen(!open)} color={color} backgroundColor={backgroundColor}>
+            <Icon open={open} onClick={() => dispatch({type: "OPEN_CHAT"})} color={color} backgroundColor={backgroundColor}>
                 CHAT
             </Icon>
 
@@ -165,8 +208,8 @@ function ChatAdmin({
                                         ))}
                                 </MsgList>
                             </MsgWindow>
-                            {roomMsg && <MsgStatus>{roomMsg}</MsgStatus>}
-                            <MsgInput ref={inputRef} block={!isInOwnRoom()} value={msg} onChange={(e: React.FormEvent<HTMLTextAreaElement>) => setMsg(e.currentTarget.value)} data-testid="msg-input">
+                            {roomStatus && <MsgStatus>{roomStatus}</MsgStatus>}
+                            <MsgInput ref={inputRef} block={!isInOwnRoom()} value={msg} onChange={(e: React.FormEvent<HTMLTextAreaElement>) => dispatch({ type: "SET_MSG", payload: e.currentTarget.value})} data-testid="msg-input">
                                 
                             </MsgInput>
                             <Button onClick={sendMsg}>
