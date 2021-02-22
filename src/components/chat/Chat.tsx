@@ -49,7 +49,6 @@ function Chat({
 
     useEffect(() => {
         // if (socket) return;
-        debugger;
         socket = io(socketConfigs.url, {
             query: {
                 client: 'user'
